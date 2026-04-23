@@ -167,32 +167,80 @@ class AndroidBridge(
                 val json = JSONObject(jsonData)
                 val sb = StringBuilder()
 
-                sb.append("\n      EZShifa Digital Health\n")
+                // Header
+                val clinicName = json.optString("clinicName", "EZShifa Digital Health")
+                sb.append("\n      $clinicName\n")
                 sb.append("--------------------------------\n")
-                sb.append("Date: ${json.getString("date")}\n")
-                sb.append("Token: #${json.getString("token")}\n")
+                sb.append("Date: ${json.optString("date", "N/A")}\n")
+                sb.append("Token: #${json.optString("token", "N/A")}\n")
                 sb.append("--------------------------------\n")
 
-                val patient = json.getJSONObject("patient")
-                sb.append("Patient: ${patient.getString("name")}\n")
-                sb.append("Age/Sex: ${patient.getString("ageSex")}\n")
-                sb.append("Weight:  ${patient.getString("weight")}\n")
-                sb.append("Diag:    ${json.getString("diagnosis")}\n")
+                // Patient Info
+                val patient = json.optJSONObject("patient") ?: JSONObject()
+                sb.append("Patient: ${patient.optString("name", "N/A")}\n")
+                sb.append("Age/Sex: ${patient.optString("ageSex", "N/A")}\n")
+
+                // Vitals (Dynamic object iteration)
+                val vitals = json.optJSONObject("vitals")
+                if (vitals != null && vitals.length() > 0) {
+                    sb.append("Vitals:\n")
+                    val keys = vitals.keys()
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        sb.append("  - $key: ${vitals.optString(key)}\n")
+                    }
+                }
+
+                // Diagnosis
+                val diagnosis = json.optString("diagnosis", "")
+                if (diagnosis.isNotEmpty()) {
+                    sb.append("Diag:    $diagnosis\n")
+                }
+
+                // Lab Tests
+                val labTests = json.optJSONArray("labTests")
+                if (labTests != null && labTests.length() > 0) {
+                    sb.append("Lab Tests:\n")
+                    for (i in 0 until labTests.length()) {
+                        sb.append("  - ${labTests.optString(i)}\n")
+                    }
+                }
+
+                // Notes
+                val notes = json.optString("notes", "")
+                if (notes.isNotEmpty()) {
+                    sb.append("Notes:\n  $notes\n")
+                }
+
                 sb.append("--------------------------------\n\n")
 
+                // Rx (Medicines)
                 sb.append("Rx:\n")
-                val medicines = json.getJSONArray("medicines")
-                for (i in 0 until medicines.length()) {
-                    val med = medicines.getJSONObject(i)
-                    sb.append("${i + 1}. ${med.getString("name")}\n")
-                    sb.append("   ${med.getString("dosage")} (${med.getString("duration")})\n")
-                    sb.append("   ${med.getString("schedule")} | ${med.getString("meal")}\n\n")
+                val medicines = json.optJSONArray("medicines")
+                if (medicines != null && medicines.length() > 0) {
+                    for (i in 0 until medicines.length()) {
+                        val med = medicines.optJSONObject(i) ?: continue
+                        sb.append("${i + 1}. ${med.optString("name", "Unknown")}\n")
+                        sb.append("   ${med.optString("dosage", "N/A")} (${med.optString("duration", "N/A")})\n")
+                        sb.append("   ${med.optString("schedule", "N/A")} | ${med.optString("meal", "N/A")}\n\n")
+                    }
+                } else {
+                    sb.append("  None prescribed\n\n")
                 }
 
                 sb.append("--------------------------------\n")
-                val doctor = json.getJSONObject("doctor")
-                sb.append("Dr. ${doctor.getString("name")}\n")
-                sb.append("${doctor.getString("specialization")}\n\n\n\n")
+
+                // Doctor Info
+                val doctor = json.optJSONObject("doctor") ?: JSONObject()
+                sb.append("Dr. ${doctor.optString("name", "N/A")}\n")
+
+                val specialization = doctor.optString("specialization", "")
+                if (specialization.isNotEmpty()) sb.append("$specialization\n")
+
+                val qualifications = doctor.optString("qualifications", "")
+                if (qualifications.isNotEmpty()) sb.append("$qualifications\n")
+
+                sb.append("\n\n\n")
 
                 val finalContent = sb.toString()
 
