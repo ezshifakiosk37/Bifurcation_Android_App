@@ -168,7 +168,7 @@ class AndroidBridge(
                 val sb = StringBuilder()
 
                 // Header
-                val clinicName = json.optString("clinicName", "EZShifa Digital Health")
+                val clinicName = json.optString("clinicName", "EZShifa Digital Clinic")
                 sb.append("\n      $clinicName\n")
                 sb.append("--------------------------------\n")
                 sb.append("Date: ${json.optString("date", "N/A")}\n")
